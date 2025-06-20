@@ -18,10 +18,7 @@ contract LoonPay is Initializable, OwnableUpgradeable, PausableUpgradeable {
     event EmergencyWithdrawUSDC(address indexed to, uint amount);
     event EmergencyWithdrawETH(uint amount);
     event Deposited(address indexed from, address indexed to, uint amount);
-
-    constructor() {
-        _disableInitializers();
-    }
+    event BackendUpdated(address indexed newBackend);
 
     function initialize(
         address usdcAddress,
@@ -99,6 +96,19 @@ contract LoonPay is Initializable, OwnableUpgradeable, PausableUpgradeable {
         uint balance = address(this).balance;
         (bool success, ) = owner().call{value: balance}("");
         require(success, "ETH withdraw failed");
+    }
+
+    function settrustedBackend(address _newBackend) external onlyOwner {
+        trustedBackend = _newBackend;
+        emit BackendUpdated(_newBackend);
+    }
+
+    function isRegistered(address user) external view returns (bool) {
+        return registered[user];
+    }
+
+    function getUsers() external view returns (address[] memory) {
+        return users;
     }
 
     function getEthSignedMessageHash(

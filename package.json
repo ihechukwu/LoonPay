@@ -2,6 +2,7 @@
   "dependencies": {
     "@openzeppelin/contracts": "^5.3.0",
     "@openzeppelin/contracts-upgradeable": "^5.3.0",
+    "dotenv": "^16.5.0",
     "hardhat": "^2.24.3"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
@@ -12,7 +13,8 @@
     "@nomicfoundation/hardhat-ignition-ethers": "^0.15.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.14",
+    "@openzeppelin/hardhat-upgrades": "^3.9.0",
     "@typechain/ethers-v6": "^0.5.0",
     "@typechain/hardhat": "^9.0.0",
     "chai": "^4.2.0",
