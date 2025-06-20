@@ -4,8 +4,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
-contract LoonPay is Initializable, OwnableUpgradeable {
+contract LoonPay is Initializable, OwnableUpgradeable, PausableUpgradeable {
     using SafeERC20 for IERC20;
     IERC20 public usdc;
     address[] private users;
@@ -14,13 +15,20 @@ contract LoonPay is Initializable, OwnableUpgradeable {
     mapping(string => bool) public codeUsed;
 
     event Redeemed(address indexed from, uint amount);
+    event EmergencyWithdrawUSDC(address indexed to, uint amount);
+    event EmergencyWithdrawETH(uint amount);
+    event Deposited(address indexed from, address indexed to, uint amount);
 
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address usdcAddress, address _trustedBackend) public {
+    function initialize(
+        address usdcAddress,
+        address _trustedBackend
+    ) public initializer {
         __Ownable_init(msg.sender);
+        __Pausable_init();
         usdc = IERC20(usdcAddress);
         trustedBackend = _trustedBackend;
     }
@@ -29,7 +37,7 @@ contract LoonPay is Initializable, OwnableUpgradeable {
         string memory code,
         uint256 amount,
         bytes memory signature
-    ) external {
+    ) external whenNotPaused {
         if (!registered[msg.sender]) {
             users.push(msg.sender);
             registered[msg.sender] = true;
@@ -48,14 +56,49 @@ contract LoonPay is Initializable, OwnableUpgradeable {
         address signer = recoverSigner(messageHash, signature);
         require(signer == trustedBackend, "Invalid backend signature");
         codeUsed[code] = true;
-        bool success = usdc.transfer(msg.sender, amount);
-        require(success, "Transfer Failed");
+        usdc.safeTransfer(msg.sender, amount);
+        emit Redeemed(msg.sender, amount);
     }
 
     // allows usdc token to be deposited to the contract
     function deposit(uint256 amount) external {
-        bool success = usdc.transferFrom(msg.sender, address(this), amount);
-        require(success, "USDC transfer failed");
+        usdc.safeTransferFrom(msg.sender, address(this), amount);
+        emit Deposited(msg.sender, address(this), amount);
+    }
+
+    // when contract is under maintenance
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    // open up the contract again
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    function emergencyWithdrawUSDC(
+        address receiver,
+        uint amount
+    ) external onlyOwner {
+        usdc.safeTransfer(receiver, amount);
+        emit EmergencyWithdrawUSDC(receiver, amount);
+    }
+
+    function emergencyWithdrawETH(uint amount) external onlyOwner {
+        (bool success, ) = owner().call{value: amount}("");
+        require(success, "Failed to withdraw ETH");
+        emit EmergencyWithdrawETH(amount);
+    }
+
+    function emergencyWithdrawAllUSDC() external onlyOwner {
+        uint balance = usdc.balanceOf(address(this));
+        usdc.safeTransfer(owner(), balance);
+    }
+
+    function emergencyWithdrawAllETH() external onlyOwner {
+        uint balance = address(this).balance;
+        (bool success, ) = owner().call{value: balance}("");
+        require(success, "ETH withdraw failed");
     }
 
     function getEthSignedMessageHash(
@@ -122,8 +165,12 @@ contract LoonPay is Initializable, OwnableUpgradeable {
         else return bytes1(uint8(b) + 0x57); // 'a' to 'f'
     }
 
-    function getContractBalance() external view returns (uint256) {
+    function getContractBalanceUSDC() external view returns (uint256) {
         return usdc.balanceOf(address(this));
+    }
+
+    function getContractBalanceETH() external view returns (uint) {
+        return address(this).balance;
     }
 
     receive() external payable {}
