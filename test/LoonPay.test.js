@@ -151,14 +151,45 @@ describe("LoonPay contract", function () {
       const { loonPay, usdc, user1, owner } = await loadFixture(
         deployLoonPayFixtures
       );
-      const initialBalance = await usdc.balanceOf(owner.address);
+
       // fund contract
       const amount = ethers.parseUnits("600", 6);
       await usdc.connect(owner).approve(loonPay.target, amount);
       await loonPay.connect(owner).deposit(amount);
+      const initialBalance = await usdc.balanceOf(owner.address);
       await loonPay.connect(owner).emergencyWithdrawAllUSDC();
       expect(await usdc.balanceOf(loonPay.target)).to.equal(0);
-      expect(await usdc.balanceOf(owner)).to.equal(initialBalance + amount);
+      expect(await usdc.balanceOf(owner.address)).to.equal(
+        initialBalance + amount
+      );
+    });
+  });
+  it("should prevent non-owner from emergency withdrawal", async function () {
+    const { user1, loonPay, usdc } = await loadFixture(deployLoonPayFixtures);
+    const amount = ethers.parseUnits("100", 6);
+    await usdc.connect(user1).approve(loonPay.target, amount);
+    await loonPay.connect(user1).deposit(amount);
+    expect(await loonPay.connect(user1).emergencyWithdrawAllUSDC()).to.be
+      .reverted;
+    expect(
+      await loonPay.connect(user1).emergencyWithdrawUSDC(user1.address, amount)
+    ).to.be.reverted;
+  });
+
+  describe("Admin Functions", function () {
+    it("allows owner update backend", async function () {
+      const { user1, owner, loonPay } = await loadFixture(
+        deployLoonPayFixtures
+      );
+      await loonPay.connect(owner).settrustedBackend(user1.address);
+      expect(await loonPay.trustedBackend()).to.equal(user1.address);
+    });
+    it("should not allow non-owner update backend", async function () {
+      const { user1, user2, loonPay } = await loadFixture(
+        deployLoonPayFixtures
+      );
+      expect(await loonPay.connect(user1).settrustedBackend(user2.address)).to
+        .be.reverted;
     });
   });
 });
