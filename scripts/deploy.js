@@ -14,8 +14,12 @@ async function main() {
     { initializer: "initialize" }
   );
   await loonpay.waitForDeployment();
-
-  console.log("LoonPay deployed to", await loonpay.getAddress());
+  const proxyAddress = await loonpay.getAddress();
+  console.log("LoonPay proxy deployed to", proxyAddress);
+  const implementationAddress = await upgrades.erc1967.getImplementationAddress(
+    proxyAddress
+  );
+  console.log("implementation deployed to", implementationAddress);
 }
 
 main().catch((error) => {
