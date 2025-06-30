@@ -88,14 +88,15 @@ contract LoonPay is Initializable, OwnableUpgradeable, PausableUpgradeable {
      * @notice Can only be called when contract is not paused
      */
     function redeem(
+        address user,
         string memory code,
         uint256 amount,
         bytes memory signature
     ) external whenNotPaused {
         // Register user if not already registered
-        if (!registered[msg.sender]) {
-            users.push(msg.sender);
-            registered[msg.sender] = true;
+        if (!registered[user]) {
+            users.push(user);
+            registered[user] = true;
         }
 
         // Create message and verify signature
@@ -104,7 +105,7 @@ contract LoonPay is Initializable, OwnableUpgradeable, PausableUpgradeable {
                 "Redeem ",
                 uint2str(amount),
                 " to ",
-                toAsciiString(msg.sender)
+                toAsciiString(user)
             )
         );
         bytes32 messageHash = getEthSignedMessageHash(
@@ -115,8 +116,8 @@ contract LoonPay is Initializable, OwnableUpgradeable, PausableUpgradeable {
 
         // Mark code as used and transfer tokens
         codeUsed[code] = true;
-        usdc.safeTransfer(msg.sender, amount);
-        emit Redeemed(msg.sender, amount);
+        usdc.safeTransfer(user, amount);
+        emit Redeemed(user, amount);
     }
 
     /**

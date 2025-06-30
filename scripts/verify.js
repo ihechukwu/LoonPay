@@ -2,7 +2,7 @@ require("dotenv").config();
 const { run, upgrades } = require("hardhat");
 const { networkConfig } = require("../helper-hardhat-config");
 
-const PROXY_ADDRESS = "0xd55A106449dc21E977cCAC70f930Beb64E06dae3";
+const PROXY_ADDRESS = "0xBC4e77eCEc95F9739E9e5103A5B213A945c64eEA";
 const USDC_ADDRESS = networkConfig[network.config.chainId]["USDC_ADDRESS"];
 const TRUSTED_BACKEND = process.env.TRUSTED_ADDRESS;
 
